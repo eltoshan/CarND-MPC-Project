@@ -101,6 +101,32 @@ int main() {
           double steer_value;
           double throttle_value;
 
+          vector<double> next_x_vals(ptsx.size());
+          vector<double> next_y_vals(ptsx.size());
+
+          for (int i = 0; i < ptsx.size(); i++) {
+            double dtx = ptsx[i] - px;
+            double dty = ptsy[i] - py;
+            next_x_vals[i] = dtx * cos(psi) + dty * sin(psi);
+            next_y_vals[i] = dty * cos(psi) - dtx * sin(psi);
+          }
+
+          Eigen::VectorXd ptsxvec(6);
+          Eigen::VectorXd ptsyvec(6);
+          ptsxvec << next_x_vals[0], next_x_vals[1], next_x_vals[2], next_x_vals[3], next_x_vals[4], next_x_vals[5];
+          ptsyvec << next_y_vals[0], next_y_vals[1], next_y_vals[2], next_y_vals[3], next_y_vals[4], next_y_vals[5];
+
+          auto coeffs = polyfit(ptsxvec, ptsyvec, 3);
+          double cte = polyeval(coeffs, 0);
+          double epsi = -atan(coeffs[1]);
+
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
+
+          auto result = mpc.Solve(state, coeffs);
+          steer_value = result[0];
+          throttle_value = result[1];
+
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
