@@ -124,7 +124,7 @@ int main() {
           state << 0, 0, 0, v, cte, epsi;
 
           auto result = mpc.Solve(state, coeffs);
-          steer_value = result[0];
+          steer_value = -result[0];
           throttle_value = result[1];
 
           json msgJson;
@@ -144,8 +144,8 @@ int main() {
           msgJson["mpc_y"] = mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          // vector<double> next_x_vals;
+          // vector<double> next_y_vals;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
