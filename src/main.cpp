@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "MPC.h"
 #include "json.hpp"
+#include <cppad/cppad.hpp>
 
 // for convenience
 using json = nlohmann::json;
@@ -91,6 +92,10 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          v = v * 1600 / 3600;
+          double delta = j[1]["steering_angle"];
+          delta = -delta;
+          double a = j[1]["throttle"];
 
           /*
           * TODO: Calculate steeering angle and throttle using MPC.
@@ -100,6 +105,9 @@ int main() {
           */
           double steer_value;
           double throttle_value;
+
+          double latency = 0.1;
+          double Lf = 2.67;
 
           vector<double> next_x_vals(ptsx.size());
           vector<double> next_y_vals(ptsx.size());
@@ -119,9 +127,19 @@ int main() {
           auto coeffs = polyfit(ptsxvec, ptsyvec, 3);
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
+          
+          px = 0;
+          py = 0;
+          psi = 0;
+          px = px + v * CppAD::cos(psi) * latency;
+          py = py + v * CppAD::sin(psi) * latency;
+          psi = psi + v*delta/Lf*latency;
+          v = v + a * latency;
+          cte = cte - py + (v * CppAD::sin(epsi) * latency);
+          epsi = epsi + v*delta/Lf*latency;
 
           Eigen::VectorXd state(6);
-          state << 0, 0, 0, v, cte, epsi;
+          state << px, py, psi, v, cte, epsi;
 
           auto result = mpc.Solve(state, coeffs);
           steer_value = -result[0];
